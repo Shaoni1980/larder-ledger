@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>The Larder Ledger</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="theme-color" content="#3A2E22" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --paper: #EFEAE0;
+    --paper-2: #E3DCC9;
+    --card: #F7F3EA;
+    --ink: #3A2E22;
+    --line: #B8AD98;
+    --sage: #6B7A4F;
+    --sage-soft: #E3E8DA;
+    --mustard: #C98A2C;
+    --rust: #B0472C;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  body { font-family: 'Work Sans', sans-serif; color: var(--ink); -webkit-tap-highlight-color: transparent; }
+  #root { min-height: 100vh; }
+
+  .app-shell { padding: 20px 16px 40px; max-width: 720px; margin: 0 auto; }
+  header h1 { font-family: 'Zilla Slab', serif; font-size: 1.9rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  header p { font-size: 0.85rem; opacity: 0.7; margin: 4px 0 0; }
+
+  .backup-row { display: flex; gap: 8px; margin: 14px 0 6px; flex-wrap: wrap; }
+  .backup-btn { font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--ink); opacity: 0.75; cursor: pointer; }
+  .backup-btn:active { opacity: 1; }
+
+  .tabs { display: flex; gap: 2px; margin: 16px 0 18px; border-bottom: 2px solid var(--line); flex-wrap: wrap; }
+  .tab-btn { font-family: 'Zilla Slab', serif; font-size: 0.85rem; font-weight: 500; padding: 9px 12px; border: none; background: transparent; color: var(--ink); opacity: 0.55; border-radius: 8px 8px 0 0; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .tab-btn.active { background: var(--ink); color: var(--paper); opacity: 1; }
+
+  .empty-msg { font-size: 0.9rem; opacity: 0.6; font-style: italic; }
+
+  .form-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; padding: 14px; border-radius: 10px; background: var(--paper-2); }
+  .input, .select { padding: 9px 11px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); font-size: 0.88rem; font-family: inherit; color: var(--ink); }
+  .input.name { flex: 1; min-width: 140px; }
+  .input.qty { width: 90px; }
+  .btn { padding: 9px 16px; border-radius: 6px; border: none; font-size: 0.88rem; font-weight: 500; font-family: 'Zilla Slab', serif; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .btn-ink { background: var(--ink); color: var(--paper); }
+  .btn-sage { background: var(--sage); color: var(--paper); }
+  .btn-rust { background: var(--rust); color: var(--paper); }
+  .btn-ghost { background: var(--paper-2); color: var(--ink); opacity: 0.75; }
+
+  .item-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  @media (min-width: 480px) { .item-grid { grid-template-columns: 1fr 1fr; } }
+  .item-card { display: flex; align-items: flex-start; justify-content: space-between; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+  .item-left { display: flex; gap: 10px; }
+  .item-emoji { font-size: 1.1rem; line-height: 1; padding: 6px; border-radius: 8px; background: rgba(0,0,0,0.05); }
+  .item-name { font-weight: 500; font-size: 0.9rem; }
+  .item-qty { font-size: 0.78rem; opacity: 0.6; margin-top: 1px; }
+  .item-age { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; margin-top: 5px; color: #7A6F5D; }
+  .item-age.stale { color: var(--rust); }
+  .icon-btn { background: none; border: none; font-size: 1rem; opacity: 0.4; cursor: pointer; padding: 2px; }
+  .icon-btn:active { opacity: 1; }
+
+  .meal-card { padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); margin-bottom: 10px; }
+  .meal-card.checked { background: var(--sage-soft); border-color: var(--sage); }
+  .meal-top { display: flex; align-items: center; justify-content: space-between; }
+  .meal-check-btn { display: flex; align-items: center; gap: 10px; flex: 1; background: none; border: none; text-align: left; cursor: pointer; padding: 0; }
+  .checkbox { width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.7rem; color: white; }
+  .checkbox.on { background: var(--sage); border-color: var(--sage); }
+  .meal-name { font-family: 'Zilla Slab', serif; font-weight: 500; font-size: 0.92rem; }
+  .ing-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 30px; }
+  .ing-tag { font-size: 0.72rem; padding: 2px 9px; border-radius: 20px; }
+
+  .meal-form { padding: 14px; border-radius: 10px; background: var(--paper-2); }
+  .meal-form .input.full { width: 100%; margin-bottom: 10px; }
+  .ing-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .ing-row .input { flex: 1; min-width: 120px; }
+  .ing-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .ing-chip { font-size: 0.72rem; padding: 3px 9px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+  .ing-chip .x { cursor: pointer; opacity: 0.7; }
+
+  .shop-group { margin-bottom: 18px; }
+  .shop-group h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.55; margin: 0 0 8px; }
+  .shop-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); margin-bottom: 6px; }
+  .shop-row-left { display: flex; align-items: center; gap: 10px; flex: 1; background: none; border: none; text-align: left; cursor: pointer; padding: 0; }
+  .shop-row-name { font-size: 0.88rem; }
+  .shop-row-name.done { text-decoration: line-through; opacity: 0.5; }
+  .shop-count { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; opacity: 0.5; }
+
+  .loading { min-height: 60vh; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; opacity: 0.7; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+const STORAGE_KEY = "larder-ledger-data";
+
+const CATEGORY_SETS = {
+  freezer: {
+    protein: { label: "Protein", emoji: "🥩", tag: "#9C6B3E" },
+    fish: { label: "Fish", emoji: "🐟", tag: "#4E7A8C" },
+    veg: { label: "Veg / fruit", emoji: "🥕", tag: "#6B7A4F" },
+    bread: { label: "Bread / bakes", emoji: "🍞", tag: "#B8863B" },
+    other: { label: "Other", emoji: "📦", tag: "#7A6F5D" },
+  },
+  fridge: {
+    dairy: { label: "Dairy / eggs", emoji: "🥛", tag: "#4E7A8C" },
+    veg: { label: "Veg / fruit", emoji: "🥕", tag: "#6B7A4F" },
+    condiment: { label: "Condiments / sauces", emoji: "🍯", tag: "#B8863B" },
+    leftovers: { label: "Leftovers", emoji: "🍲", tag: "#B0472C" },
+    other: { label: "Other", emoji: "📦", tag: "#7A6F5D" },
+  },
+  pantry: {
+    tins: { label: "Tins / jars", emoji: "🥫", tag: "#9C6B3E" },
+    dry: { label: "Dry goods / grains", emoji: "🌾", tag: "#B8863B" },
+    baking: { label: "Baking", emoji: "🧁", tag: "#4E7A8C" },
+    other: { label: "Other", emoji: "📦", tag: "#7A6F5D" },
+  },
+  spices: {
+    whole: { label: "Whole spices", emoji: "🌰", tag: "#9C6B3E" },
+    ground: { label: "Ground spices", emoji: "🧂", tag: "#B0472C" },
+    blend: { label: "Blends / masalas", emoji: "✨", tag: "#6B7A4F" },
+    herb: { label: "Dried herbs", emoji: "🌿", tag: "#4E7A8C" },
+    other: { label: "Other", emoji: "📦", tag: "#7A6F5D" },
+  },
+};
+
+const STALE_DAYS = { freezer: 90, fridge: 6, pantry: 270, spices: 365 };
+const AGE_LABEL = { freezer: "in freezer", fridge: "in fridge", pantry: "in pantry", spices: "in the tin" };
+const STALE_MSG = { freezer: "use soon", fridge: "use soon", pantry: "losing freshness", spices: "losing potency" };
+
+const SOURCE_META = {
+  freezer: { label: "from freezer", tag: "#6B7A4F" },
+  pantry: { label: "pantry", tag: "#C98A2C" },
+  spices: { label: "spices", tag: "#9C6B3E" },
+  fresh: { label: "fresh / veg box", tag: "#B0472C" },
+};
+
+function daysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString(); }
+function daysSince(iso) { return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000); }
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+const SEED_FREEZER = [
+  { id: "f1", name: "Chicken thighs", qty: "6 pieces", category: "protein", addedDate: daysAgo(18) },
+  { id: "f2", name: "Frozen peas", qty: "1 bag", category: "veg", addedDate: daysAgo(40) },
+  { id: "f3", name: "Salmon fillets", qty: "2", category: "fish", addedDate: daysAgo(70) },
+  { id: "f4", name: "Sourdough loaf", qty: "1", category: "bread", addedDate: daysAgo(10) },
+];
+const SEED_FRIDGE = [
+  { id: "r1", name: "Milk", qty: "1 pint", category: "dairy", addedDate: daysAgo(2) },
+  { id: "r2", name: "Cheddar", qty: "half block", category: "dairy", addedDate: daysAgo(5) },
+  { id: "r3", name: "Leftover dal", qty: "1 tub", category: "leftovers", addedDate: daysAgo(2) },
+  { id: "r4", name: "Mango chutney", qty: "1 jar", category: "condiment", addedDate: daysAgo(30) },
+];
+const SEED_PANTRY = [
+  { id: "p1", name: "Basmati rice", qty: "1 bag", category: "dry", addedDate: daysAgo(20) },
+  { id: "p2", name: "Chickpeas (tin)", qty: "3 tins", category: "tins", addedDate: daysAgo(45) },
+  { id: "p3", name: "Plain flour", qty: "1 bag", category: "baking", addedDate: daysAgo(15) },
+];
+const SEED_SPICES = [
+  { id: "s1", name: "Cumin seeds", qty: "1 jar", category: "whole", addedDate: daysAgo(60) },
+  { id: "s2", name: "Ground turmeric", qty: "1 jar", category: "ground", addedDate: daysAgo(90) },
+  { id: "s3", name: "Garam masala", qty: "1 tin", category: "blend", addedDate: daysAgo(30) },
+  { id: "s4", name: "Dried curry leaves", qty: "1 pack", category: "herb", addedDate: daysAgo(120) },
+];
+const SEED_MEALS = [
+  { id: "m1", name: "Chicken & spinach curry", ingredients: [
+    { name: "Chicken thighs", source: "freezer" }, { name: "Spinach", source: "fresh" },
+    { name: "Onions", source: "pantry" }, { name: "Curry spices", source: "spices" },
+  ]},
+  { id: "m2", name: "Salmon traybake", ingredients: [
+    { name: "Salmon fillets", source: "freezer" }, { name: "New potatoes", source: "fresh" },
+    { name: "Lemon", source: "pantry" }, { name: "Green beans", source: "fresh" },
+  ]},
+  { id: "m3", name: "Chana masala & rice", ingredients: [
+    { name: "Chickpeas (tin)", source: "pantry" }, { name: "Tomatoes (tin)", source: "pantry" },
+    { name: "Basmati rice", source: "pantry" }, { name: "Coriander", source: "fresh" },
+  ]},
+  { id: "m4", name: "Sausage & root veg roast", ingredients: [
+    { name: "Sausages", source: "freezer" }, { name: "Carrots", source: "fresh" },
+    { name: "Parsnips", source: "fresh" }, { name: "Rosemary", source: "pantry" },
+  ]},
+  { id: "m5", name: "Veg box stir-fry", ingredients: [
+    { name: "Whatever's in the veg box", source: "fresh" }, { name: "Soy sauce", source: "pantry" },
+    { name: "Garlic", source: "pantry" }, { name: "Noodles", source: "pantry" },
+  ]},
+  { id: "m6", name: "Fish pie", ingredients: [
+    { name: "White fish", source: "freezer" }, { name: "Peas", source: "freezer" },
+    { name: "Potatoes", source: "fresh" }, { name: "Milk", source: "pantry" },
+  ]},
+];
+
+function App() {
+  const [data, setData] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [tab, setTab] = useState("freezer");
+  const [copyState, setCopyState] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const [showMealForm, setShowMealForm] = useState(false);
+  const [mName, setMName] = useState("");
+  const [mIngredients, setMIngredients] = useState([]);
+  const [ingName, setIngName] = useState("");
+  const [ingSource, setIngSource] = useState("pantry");
+  const [extraName, setExtraName] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setData({ fridge: [], pantry: [], spices: [], extras: [], checkedItems: {}, selectedMealIds: [], ...parsed });
+      } else {
+        const seed = { freezer: SEED_FREEZER, fridge: SEED_FRIDGE, pantry: SEED_PANTRY, spices: SEED_SPICES, meals: SEED_MEALS, selectedMealIds: [], checkedItems: {}, extras: [] };
+        setData(seed);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+      }
+    } catch (e) {
+      const seed = { freezer: SEED_FREEZER, fridge: SEED_FRIDGE, pantry: SEED_PANTRY, spices: SEED_SPICES, meals: SEED_MEALS, selectedMealIds: [], checkedItems: {}, extras: [] };
+      setData(seed);
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  const persist = useCallback((next) => {
+    setData(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+  }, []);
+
+  const shoppingItems = useMemo(() => {
+    if (!data) return [];
+    const stock = [...(data.freezer||[]), ...(data.fridge||[]), ...(data.pantry||[]), ...(data.spices||[])].map(i => i.name.toLowerCase().trim());
+    const alreadyStocked = (name) => {
+      const n = name.toLowerCase().trim();
+      return stock.some(s => s === n || s.includes(n) || n.includes(s));
+    };
+    const selected = data.meals.filter(m => data.selectedMealIds.includes(m.id));
+    const map = new Map();
+    selected.forEach(meal => {
+      meal.ingredients.forEach(ing => {
+        if (alreadyStocked(ing.name)) return;
+        const key = ing.name.toLowerCase();
+        if (!map.has(key)) map.set(key, { name: ing.name, source: ing.source, meals: [meal.name] });
+        else map.get(key).meals.push(meal.name);
+      });
+    });
+    return Array.from(map.values()).sort((a,b) => a.source.localeCompare(b.source) || a.name.localeCompare(b.name));
+  }, [data]);
+
+  if (!loaded || !data) {
+    return <div className="loading">Loading your larder…</div>;
+  }
+
+  const addInventoryItem = (storeKey, name, qty, category) => {
+    if (!name.trim()) return;
+    const item = { id: uid(), name: name.trim(), qty: qty.trim() || "1", category, addedDate: new Date().toISOString() };
+    persist({ ...data, [storeKey]: [item, ...data[storeKey]] });
+  };
+  const removeInventoryItem = (storeKey, id) => {
+    persist({ ...data, [storeKey]: data[storeKey].filter(i => i.id !== id) });
+  };
+  const toggleMealSelected = (id) => {
+    const set = new Set(data.selectedMealIds);
+    set.has(id) ? set.delete(id) : set.add(id);
+    persist({ ...data, selectedMealIds: Array.from(set) });
+  };
+  const deleteMeal = (id) => {
+    persist({ ...data, meals: data.meals.filter(m => m.id !== id), selectedMealIds: data.selectedMealIds.filter(x => x !== id) });
+  };
+  const addIngredientToBuilder = () => {
+    if (!ingName.trim()) return;
+    setMIngredients([...mIngredients, { name: ingName.trim(), source: ingSource }]);
+    setIngName("");
+  };
+  const saveMeal = () => {
+    if (!mName.trim() || mIngredients.length === 0) return;
+    const meal = { id: uid(), name: mName.trim(), ingredients: mIngredients };
+    persist({ ...data, meals: [...data.meals, meal] });
+    setMName(""); setMIngredients([]); setShowMealForm(false);
+  };
+  const toggleShoppingCheck = (key) => {
+    persist({ ...data, checkedItems: { ...data.checkedItems, [key]: !data.checkedItems[key] } });
+  };
+  const addExtra = () => {
+    if (!extraName.trim()) return;
+    persist({ ...data, extras: [...data.extras, { id: uid(), name: extraName.trim() }] });
+    setExtraName("");
+  };
+  const removeExtra = (id) => {
+    persist({ ...data, extras: data.extras.filter(e => e.id !== id) });
+  };
+  const resetCycle = () => {
+    persist({ ...data, selectedMealIds: [], checkedItems: {}, extras: [] });
+  };
+
+  const grouped = {
+    fresh: shoppingItems.filter(i => i.source === "fresh"),
+    pantry: shoppingItems.filter(i => i.source === "pantry"),
+    spices: shoppingItems.filter(i => i.source === "spices"),
+  };
+
+  const copyList = () => {
+    const lines = [];
+    if (grouped.fresh.length) { lines.push("FRESH / VEG BOX:"); grouped.fresh.forEach(i => lines.push("- " + i.name)); lines.push(""); }
+    if (grouped.pantry.length) { lines.push("PANTRY:"); grouped.pantry.forEach(i => lines.push("- " + i.name)); lines.push(""); }
+    if (grouped.spices.length) { lines.push("SPICES:"); grouped.spices.forEach(i => lines.push("- " + i.name)); lines.push(""); }
+    if (data.extras.length) { lines.push("EXTRAS:"); data.extras.forEach(i => lines.push("- " + i.name)); }
+    navigator.clipboard.writeText(lines.join("\n")).then(() => { setCopyState(true); setTimeout(() => setCopyState(false), 1800); });
+  };
+
+  const exportBackup = () => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url; a.download = `larder-ledger-backup-${date}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const importBackup = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const parsed = JSON.parse(evt.target.result);
+        if (!window.confirm("This will replace everything currently in the app with this backup. Continue?")) return;
+        persist({ freezer: [], fridge: [], pantry: [], spices: [], meals: [], selectedMealIds: [], checkedItems: {}, extras: [], ...parsed });
+      } catch (err) {
+        alert("That file couldn't be read as a valid backup.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const TABS = [
+    { id: "freezer", label: "Freezer", emoji: "❄️" },
+    { id: "fridge", label: "Fridge", emoji: "🧊" },
+    { id: "pantry", label: "Pantry", emoji: "🥫" },
+    { id: "spices", label: "Spices", emoji: "🌶️" },
+    { id: "meals", label: "Meals", emoji: "🍳" },
+    { id: "shopping", label: "Shopping", emoji: "🛒" },
+  ];
+
+  return (
+    <div className="app-shell">
+      <header>
+        <h1>The Larder Ledger</h1>
+        <p>Freezer, fridge, pantry and spice inventory, meal rotation, and a shopping list that builds itself.</p>
+      </header>
+
+      <div className="backup-row">
+        <button className="backup-btn" onClick={exportBackup}>⬇ Export backup</button>
+        <button className="backup-btn" onClick={() => fileInputRef.current.click()}>⬆ Import backup</button>
+        <input type="file" accept="application/json" ref={fileInputRef} style={{display:"none"}} onChange={importBackup} />
+      </div>
+
+      <div className="tabs">
+        {TABS.map(t => (
+          <button key={t.id} className={"tab-btn" + (tab === t.id ? " active" : "")} onClick={() => setTab(t.id)}>
+            <span>{t.emoji}</span> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {(tab === "freezer" || tab === "fridge" || tab === "pantry" || tab === "spices") && (
+        <InventoryPanel
+          storeKey={tab}
+          items={data[tab]}
+          categoryMeta={CATEGORY_SETS[tab]}
+          staleDays={STALE_DAYS[tab]}
+          staleMsg={STALE_MSG[tab]}
+          ageLabel={AGE_LABEL[tab]}
+          onAdd={(name, qty, category) => addInventoryItem(tab, name, qty, category)}
+          onRemove={(id) => removeInventoryItem(tab, id)}
+        />
+      )}
+
+      {tab === "meals" && (
+        <div>
+          <p style={{fontSize:"0.85rem", opacity:0.7, marginBottom:"14px"}}>Tick the meals you fancy for this shopping cycle — the shopping list builds itself from what's ticked.</p>
+          <div>
+            {data.meals.map(meal => {
+              const checked = data.selectedMealIds.includes(meal.id);
+              return (
+                <div key={meal.id} className={"meal-card" + (checked ? " checked" : "")}>
+                  <div className="meal-top">
+                    <button className="meal-check-btn" onClick={() => toggleMealSelected(meal.id)}>
+                      <span className={"checkbox" + (checked ? " on" : "")}>{checked ? "✓" : ""}</span>
+                      <span className="meal-name">{meal.name}</span>
+                    </button>
+                    <button className="icon-btn" onClick={() => deleteMeal(meal.id)}>🗑</button>
+                  </div>
+                  <div className="ing-tags">
+                    {meal.ingredients.map((ing, i) => {
+                      const sm = SOURCE_META[ing.source];
+                      return <span key={i} className="ing-tag" style={{background: sm.tag + "1A", color: sm.tag}}>{ing.name}</span>;
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {!showMealForm ? (
+            <button className="btn btn-ink" onClick={() => setShowMealForm(true)}>+ Add a meal</button>
+          ) : (
+            <div className="meal-form">
+              <input className="input full" value={mName} onChange={e => setMName(e.target.value)} placeholder="Meal name" />
+              <div className="ing-row">
+                <input className="input" value={ingName} onChange={e => setIngName(e.target.value)} placeholder="Ingredient" />
+                <select className="select" value={ingSource} onChange={e => setIngSource(e.target.value)}>
+                  {Object.entries(SOURCE_META).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
+                </select>
+                <button className="btn btn-sage" onClick={addIngredientToBuilder}>+</button>
+              </div>
+              <div className="ing-chip-row">
+                {mIngredients.map((ing, i) => (
+                  <span key={i} className="ing-chip" style={{background: SOURCE_META[ing.source].tag + "1A", color: SOURCE_META[ing.source].tag}}>
+                    {ing.name}
+                    <span className="x" onClick={() => setMIngredients(mIngredients.filter((_, idx) => idx !== i))}>✕</span>
+                  </span>
+                ))}
+              </div>
+              <div style={{display:"flex", gap:"8px"}}>
+                <button className="btn btn-ink" onClick={saveMeal}>Save meal</button>
+                <button className="btn btn-ghost" onClick={() => { setShowMealForm(false); setMIngredients([]); setMName(""); }}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "shopping" && (
+        <div>
+          {shoppingItems.length === 0 && data.extras.length === 0 ? (
+            <p className="empty-msg" style={{marginBottom:"14px"}}>No meals picked yet — tick some off in Meals and your list will appear here.</p>
+          ) : (
+            <React.Fragment>
+              {grouped.fresh.length > 0 && (
+                <div className="shop-group">
+                  <h3>Fresh / veg box</h3>
+                  {grouped.fresh.map(item => <ShopRow key={item.name} item={item} checked={!!data.checkedItems[item.name]} onToggle={() => toggleShoppingCheck(item.name)} />)}
+                </div>
+              )}
+              {grouped.pantry.length > 0 && (
+                <div className="shop-group">
+                  <h3>Pantry (Ocado shop)</h3>
+                  {grouped.pantry.map(item => <ShopRow key={item.name} item={item} checked={!!data.checkedItems[item.name]} onToggle={() => toggleShoppingCheck(item.name)} />)}
+                </div>
+              )}
+              {grouped.spices.length > 0 && (
+                <div className="shop-group">
+                  <h3>Spices</h3>
+                  {grouped.spices.map(item => <ShopRow key={item.name} item={item} checked={!!data.checkedItems[item.name]} onToggle={() => toggleShoppingCheck(item.name)} />)}
+                </div>
+              )}
+              {data.extras.length > 0 && (
+                <div className="shop-group">
+                  <h3>Extras</h3>
+                  {data.extras.map(item => (
+                    <div key={item.id} className="shop-row">
+                      <button className="shop-row-left" onClick={() => toggleShoppingCheck(item.name)}>
+                        <span className={"checkbox" + (data.checkedItems[item.name] ? " on" : "")} style={{background: data.checkedItems[item.name] ? "#C98A2C" : "transparent", borderColor: data.checkedItems[item.name] ? "#C98A2C" : "var(--line)"}}>{data.checkedItems[item.name] ? "✓" : ""}</span>
+                        <span className={"shop-row-name" + (data.checkedItems[item.name] ? " done" : "")}>{item.name}</span>
+                      </button>
+                      <button className="icon-btn" onClick={() => removeExtra(item.id)}>🗑</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </React.Fragment>
+          )}
+
+          <div style={{display:"flex", gap:"8px", marginBottom:"18px"}}>
+            <input className="input" style={{flex:1}} value={extraName} onChange={e => setExtraName(e.target.value)}
+              placeholder="Add something extra…" onKeyDown={e => e.key === "Enter" && addExtra()} />
+            <button className="btn btn-rust" onClick={addExtra}>+</button>
+          </div>
+
+          <div style={{display:"flex", flexWrap:"wrap", gap:"8px"}}>
+            <button className="btn btn-ink" onClick={copyList}>{copyState ? "✓ Copied" : "⧉ Copy list"}</button>
+            <button className="btn btn-ghost" onClick={resetCycle}>↺ Start new cycle</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InventoryPanel({ storeKey, items, categoryMeta, staleDays, staleMsg, ageLabel, onAdd, onRemove }) {
+  const categoryKeys = Object.keys(categoryMeta);
+  const [name, setName] = useState("");
+  const [qty, setQty] = useState("");
+  const [cat, setCat] = useState(categoryKeys[0]);
+
+  const submit = () => {
+    if (!name.trim()) return;
+    onAdd(name, qty, cat);
+    setName(""); setQty("");
+  };
+
+  const sorted = [...items].sort((a,b) => daysSince(b.addedDate) - daysSince(a.addedDate));
+  const placeholders = { freezer: "Item, e.g. chicken thighs", fridge: "Item, e.g. milk", pantry: "Item, e.g. basmati rice", spices: "Item, e.g. garam masala" };
+
+  return (
+    <div>
+      <div className="form-row">
+        <input className="input name" value={name} onChange={e => setName(e.target.value)} placeholder={placeholders[storeKey] || "Item name"} onKeyDown={e => e.key === "Enter" && submit()} />
+        <input className="input qty" value={qty} onChange={e => setQty(e.target.value)} placeholder="Qty" onKeyDown={e => e.key === "Enter" && submit()} />
+        <select className="select" value={cat} onChange={e => setCat(e.target.value)}>
+          {categoryKeys.map(k => <option key={k} value={k}>{categoryMeta[k].label}</option>)}
+        </select>
+        <button className="btn btn-ink" onClick={submit}>+ Add</button>
+      </div>
+
+      {sorted.length === 0 ? (
+        <p className="empty-msg">Nothing logged yet — add what's in there as you think of it.</p>
+      ) : (
+        <div className="item-grid">
+          {sorted.map(item => {
+            const meta = categoryMeta[item.category] || categoryMeta.other;
+            const days = daysSince(item.addedDate);
+            const stale = days > staleDays;
+            return (
+              <div key={item.id} className="item-card">
+                <div className="item-left">
+                  <div className="item-emoji" style={{background: meta.tag + "22"}}>{meta.emoji}</div>
+                  <div>
+                    <div className="item-name">{item.name}</div>
+                    <div className="item-qty">{item.qty}</div>
+                    <div className={"item-age" + (stale ? " stale" : "")}>{days}d {ageLabel} {stale ? "· " + staleMsg : ""}</div>
+                  </div>
+                </div>
+                <button className="icon-btn" onClick={() => onRemove(item.id)}>🗑</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShopRow({ item, checked, onToggle }) {
+  const sm = SOURCE_META[item.source];
+  return (
+    <div className="shop-row">
+      <button className="shop-row-left" onClick={onToggle}>
+        <span className={"checkbox" + (checked ? " on" : "")} style={{background: checked ? sm.tag : "transparent", borderColor: checked ? sm.tag : "var(--line)"}}>{checked ? "✓" : ""}</span>
+        <span className={"shop-row-name" + (checked ? " done" : "")}>{item.name}</span>
+      </button>
+      <span className="shop-count">{item.meals.length > 1 ? "×" + item.meals.length : ""}</span>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
