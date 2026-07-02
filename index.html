@@ -99,7 +99,7 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
 
-<script type="text/babel" data-presets="react">
+<script type="text/plain" id="app-source">
 const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
 const STORAGE_KEY = "larder-ledger-data";
@@ -575,5 +575,12 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+
+<script>
+  var source = document.getElementById("app-source").textContent;
+  var compiled = Babel.transform(source, { presets: [["react", { runtime: "classic" }]] }).code;
+  (0, eval)(compiled);
+</script>
+
 </body>
 </html>
